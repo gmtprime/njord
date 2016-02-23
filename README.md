@@ -8,78 +8,82 @@ generating the corresponding functions of the API. Relies on `HTTPoison` to
 do the actual request. To define a custom API specification just use
 `Njord.Api` module as base.
 
-      defmodule Github do
-        use Njord.Api
-        alias Njord.Api.Request, as: Request
+```elixir
+defmodule Github do
+  use Njord.Api
+  alias Njord.Api.Request, as: Request
 
-        @url "https://api.github.com"
+  @url "https://api.github.com"
 
-        def process_url(request, path, _state) do
-          %Request{request | url: @url <> path}
-        end
+  def process_url(request, path, _state) do
+    %Request{request | url: @url <> path}
+  end
 
-        defget :get_repos,
-          path: "/users/:username",
-          args: [:username]
-      end
+  defget :get_repos,
+    path: "/users/:username",
+    args: [:username]
+end
+```
 
 The above example shows how to create the functions `get_repos/1` and
 `get_repos/2` (this one receives a list of options for `HTTPoison`) for the
 endpoint `GET https://api.github.com/users/<username>`.
 
-      iex(1)> alias HTTPoison.Response, as: Response
-      iex(2)> Github.get_repos("alexdesousa")
-      {:ok, %HTTPoison.Response{
-      ...
-      }}
-      iex(3)> Github.get_repos("alexdesousa", stream_to: self())
-      {:ok, %HTTPoison.AsyncResponse{...}}
-      iex(4)> flush
-      %HTTPoison.AsyncStatus{...}
-      %HTTPoison.AsyncHeaders{...}
-      %HTTPoison.AsyncChunk{...}
-      ...
-      %HTTPoison.AsyncChunk{...}
-      %HTTPoison.AsyncEnd{...}
+```elixir
+iex(1)> alias HTTPoison.Response, as: Response
+iex(2)> Github.get_repos("alexdesousa")
+{:ok, %HTTPoison.Response{...}}
+iex(3)> Github.get_repos("alexdesousa", stream_to: self())
+{:ok, %HTTPoison.AsyncResponse{...}}
+iex(4)> flush
+%HTTPoison.AsyncStatus{...}
+%HTTPoison.AsyncHeaders{...}
+%HTTPoison.AsyncChunk{...}
+...
+%HTTPoison.AsyncChunk{...}
+%HTTPoison.AsyncEnd{...}
+```
 
 ## Overriding functions
 
 Like `HTTPoison`, `Njord.Api` defines the following list of functions, all of
 which can be overriden:
 
-      # Processes the endpoint URL after the substitutions.
-      @spec process_url(Njord.Api.Request.t, String.t, term)
-        :: Njord.Api.Request.t
-      def process_url(request, url, state)
+```elixir
+# Processes the endpoint URL after the substitutions.
+@spec process_url(Njord.Api.Request.t, String.t, term)
+  :: Njord.Api.Request.t
+def process_url(request, url, state)
 
-      # Processes the request body.
-      @spec process_body(Njord.Api.Request.t, term, term)
-        :: Njord.Api.Request.t
-      def process_body(request, body, state)
+# Processes the request body.
+@spec process_body(Njord.Api.Request.t, term, term)
+  :: Njord.Api.Request.t
+def process_body(request, body, state)
 
-      # Processes the request headers.
-      @spec process_request(Njord.Api.Request.t, [{binary, binary}], term)
-        :: Njord.Api.Request.t
-      def process_headers(request, headers, state)
+# Processes the request headers.
+@spec process_request(Njord.Api.Request.t, [{binary, binary}], term)
+  :: Njord.Api.Request.t
+def process_headers(request, headers, state)
 
-      # Processes the status code of the request.
-      @spec process_status_code(Njord.Api.Response.t, int, term)
-        :: HTTPoison.Response.t
-      def process_status_code(response, status_code, state)
+# Processes the status code of the request.
+@spec process_status_code(Njord.Api.Response.t, int, term)
+  :: HTTPoison.Response.t
+def process_status_code(response, status_code, state)
       
-      # Processes the response headers.
-      @spec process_response_headers(Njord.Api.Response.t,
-                                     [{binary, binary}],
-                                     term)
-        :: HTTPoison.Response.t
-      def process_response_headers(response, headers, state)
+# Processes the response headers.
+@spec process_response_headers(Njord.Api.Response.t,
+                               [{binary, binary}],
+                               term)
+  :: HTTPoison.Response.t
+def process_response_headers(response, headers, state)
 
-      # Processes the response body.
-      @spec process_response_body(Njord.Api.Response.t, String.t, term)
-        :: HTTPoison.Response.t
-      def process_response_body(response, body, state)
+# Processes the response body.
+@spec process_response_body(Njord.Api.Response.t, String.t, term)
+  :: HTTPoison.Response.t
+def process_response_body(response, body, state)
+```
 
-  These functions are executed in the order the were listed.
+These functions are executed in the order the were listed.
 
 ## Options
 
@@ -111,15 +115,27 @@ Also any other option available for `HTTPoison`.
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
 
-  1. Add njord to your list of dependencies in `mix.exs`:
+  * When available in `hex` Add njord to your list of dependencies in `mix.exs`:
 
-        def deps do
-          [{:njord, "~> 0.0.1"}]
-        end
+  ```elixir
+  def deps do
+    [{:njord, "~> 0.1.0"}]
+  end
+  ```
 
-  2. Ensure njord can be used:
+  * If not available in `hex`:
+      
+  ```elixir
+  def deps do
+    [{:njord, github: "gmtprime/njord"}]
+  end
+  ```
 
-        def application do
-          [applications: [:httpoison]]
-        end
+  * Ensure njord can be used starting `HTTPoison`:
+
+  ```elixir
+  def application do
+    [applications: [:httpoison]]
+  end
+  ```
 
