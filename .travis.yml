@@ -1,4 +1,7 @@
 sudo: false
+notifications:
+    email:
+        - tech@gmtprime.com
 language: elixir
 elixir:
     - 1.2.1
