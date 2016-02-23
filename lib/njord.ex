@@ -1,0 +1,2 @@
+defmodule Njord do
+end
