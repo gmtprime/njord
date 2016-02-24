@@ -2,6 +2,8 @@
 
 > Njörðr, god of the wind and the sea.
 
+[![Build Status](https://travis-ci.org/gmtprime/njord.svg?branch=master)](https://travis-ci.org/gmtprime/njord) [![Hex pm](http://img.shields.io/hexpm/v/njord.svg?style=flat)](https://hex.pm/packages/njord) [![hex.pm downloads](https://img.shields.io/hexpm/dt/njord.svg?style=flat)](https://hex.pm/packages/njord)
+
 This library is a wrapper over `HTTPoison` to build client APIs. It provides a
 series of macros that make easy to write a REST API client specification while
 generating the corresponding functions of the API. Relies on `HTTPoison` to
