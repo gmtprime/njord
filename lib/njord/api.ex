@@ -38,20 +38,15 @@ defmodule Njord.Api do
         :: Njord.Api.Request.t
       def process_url(request, url, state)
 
+      # Processes the request headers.
+      @spec process_headers(Njord.Api.Request.t, [{binary, binary}], term)
+        :: Njord.Api.Request.t
+      def process_headers(request, headers, state)
+
       # Processes the request body.
       @spec process_body(Njord.Api.Request.t, term, term)
         :: Njord.Api.Request.t
       def process_body(request, body, state)
-
-      # Processes the request headers.
-      @spec process_request(Njord.Api.Request.t, [{binary, binary}], term)
-        :: Njord.Api.Request.t
-      def process_headers(request, headers, state)
-
-      # Processes the status code of the request.
-      @spec process_status_code(Njord.Api.Response.t, int, term)
-        :: HTTPoison.Response.t
-      def process_status_code(response, status_code, state)
       
       # Processes the response headers.
       @spec process_response_headers(Njord.Api.Response.t,
@@ -64,6 +59,11 @@ defmodule Njord.Api do
       @spec process_response_body(Njord.Api.Response.t, String.t, term)
         :: HTTPoison.Response.t
       def process_response_body(response, body, state)
+
+      # Processes the status code of the request.
+      @spec process_status_code(Njord.Api.Response.t, int, term)
+        :: HTTPoison.Response.t
+      def process_status_code(response, status_code, state)
 
   These functions are executed in the order the were listed.
   """
@@ -184,6 +184,53 @@ defmodule Njord.Api do
     end
   end
 
+  ##
+  # Get path
+  defp _get_path(options), do:
+    Keyword.get options, :path, "/"
+
+  ##
+  # Get function arguements.
+  defp _get_function_arguments(options), do:
+    Keyword.get options, :args, []
+
+  ##
+  # Gets the process functions.
+  defp _get_process_functions(options) do 
+    protocol = Keyword.get options, :protocol, quote do: __MODULE__
+    [:process_url, :process_headers, :process_body, :process_response_headers,
+     :process_response_body, :process_status_code]
+    |> Enum.map(
+         fn (name) ->
+           quoted_function = case Keyword.get options, name, nil do
+             nil ->
+               quote do: &(apply unquote(protocol), unquote(name), [&1, &2, &3])
+              f ->
+                quote do: &(unquote(f).(&1, &2, &3))
+            end
+            {name, quoted_function}
+         end)
+    |> Map.new
+  end
+
+  ##
+  # Gets state
+  defp _get_state(options) do
+    case Keyword.get options, :state_getter, nil do
+      nil ->
+        quote do
+          case Keyword.pop opts, :state_getter, nil do
+            {nil, opts} ->
+              Keyword.pop opts, :state, nil
+            {state_getter, opts} ->
+              {state_getter.(), opts}
+          end
+        end
+      state_getter ->
+        quote do: {unquote(state_getter).(), opts}
+    end
+  end
+
   @doc """
   Generates a function to call an endpoint.
 
@@ -195,9 +242,18 @@ defmodule Njord.Api do
         information it on the path i.e. "/accounts/:login" will expect a
         variable named `login` in the function arguments.
       + `:args` - Name of the variables of the endpoint function.
-      + `:protocol` - Module where the protocol is defined.
+      + `:protocol` - Module where the protocol is defined. By default is
       + `:state_getter` - Function to get or generate the state of every
         request.
+      + `process_url` - Function to be used when processing the URL.
+      + `process_headers` - Function to be used when processing the headers.
+      + `process_body` - Function to be used when processing the body.
+      + `process_response_headers` - Function to be used when processing the
+        response headers.
+      + `process_response_body` - Function to be used when processing the
+        response body.
+      + `process_status_code` - Function to be used when processing the status
+        code of the response.
 
   Options when calling the genererated function:
     * `:params` - Parameters of the HTTP request as a `Keyword` list.
@@ -215,23 +271,11 @@ defmodule Njord.Api do
     Endpoint function definition.
   """
   defmacro defendpoint(name, method, options \\ []) do
-    path = Keyword.get options, :path, "/"
-    args = Keyword.get options, :args, []
-    protocol = Keyword.get options, :protocol, quote do: __MODULE__
-    {path, not_used, args} = _get_split_path(path, args)
-    state = case Keyword.get options, :state_getter, nil do
-      nil ->
-        quote do
-          case Keyword.pop opts, :state_getter, nil do
-            {nil, opts} ->
-              Keyword.pop opts, :state, nil
-            {state_getter, opts} ->
-              {state_getter.(), opts}
-          end
-        end
-      state_getter ->
-        quote do: {unquote(state_getter).(), opts}
-    end
+    path = _get_path options
+    args = _get_function_arguments options
+    functions = _get_process_functions options
+    {path, not_used, args} = _get_split_path path, args
+    state = _get_state options
     quote do
       def unquote(name)(unquote_splicing(args), opts \\ []) do
         # Get path.
@@ -253,21 +297,24 @@ defmodule Njord.Api do
         req = Request.new method, path, body, headers
 
         # Process
-        protocol = unquote(protocol)
+        process_url = unquote(functions.process_url)
+        process_headers = unquote(functions.process_headers)
+        process_body = unquote(functions.process_body)
+        process_response_headers = unquote(functions.process_response_headers)
+        process_response_body = unquote(functions.process_response_body)
+        process_status_code = unquote(functions.process_status_code)
         result = req
-                 |> protocol.process_url(path, state)
-                 |> protocol.process_body(body, state)
-                 |> protocol.process_headers(headers, state)
+                 |> process_url.(path, state)
+                 |> process_headers.(headers, state)
+                 |> process_body.(body, state)
                  |> request(opts)
 
         case result do
           {:ok, %Response{} = response} ->
             result = response
-                     |> protocol.process_status_code(response.status_code,
-                                                     state)
-                     |> protocol.process_response_headers(response.headers,
-                                                          state)
-                     |> protocol.process_response_body(response.body, state)
+                     |> process_response_headers.(response.headers, state)
+                     |> process_response_body.(response.body, state)
+                     |> process_status_code.(response.status_code, state)
             {:ok, %Response{body: result.body, headers: result.headers,
                             status_code: result.status_code}}
           other -> other

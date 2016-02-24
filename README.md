@@ -61,7 +61,7 @@ def process_url(request, url, state)
 def process_body(request, body, state)
 
 # Processes the request headers.
-@spec process_request(Njord.Api.Request.t, [{binary, binary}], term)
+@spec process_headers(Njord.Api.Request.t, [{binary, binary}], term)
   :: Njord.Api.Request.t
 def process_headers(request, headers, state)
 
@@ -98,6 +98,15 @@ When generating the specification of the endpoint, there are several options:
     + `:args` - Name of the variables of the endpoint function.
     + `:protocol` - Module where the protocol is defined.
     + `:state_getter` - Function to get or generate the state of every request.
+    + `process_url` - Function to be used when processing the URL.
+    + `process_headers` - Function to be used when processing the headers.
+    + `process_body` - Function to be used when processing the body.
+    + `process_response_headers` - Function to be used when processing the
+      response headers.
+    + `process_response_body` - Function to be used when processing the
+      response body.
+    + `process_status_code` - Function to be used when processing the status
+      code of the response.
 
 And when calling the genererated function there are other aditional options:
   * `:params` - Parameters of the HTTP request as a `Keyword` list.
@@ -119,7 +128,7 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 
   ```elixir
   def deps do
-    [{:njord, "~> 0.1.0"}]
+    [{:njord, "~> 0.1.1"}]
   end
   ```
 

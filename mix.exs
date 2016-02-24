@@ -29,7 +29,7 @@ defmodule Njord.Mixfile do
 
   defp package do
     [maintainers: ["Alexander de Sousa"],
-     license: ["MIT"],
+     licenses: ["MIT"],
      links: %{"Github" => "https://github.com/gmtprime/njord"}]
   end
 end

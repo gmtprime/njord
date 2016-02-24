@@ -1,6 +1,41 @@
 defmodule Njord.ApiTest do
   use ExUnit.Case, async: true
 
+  defmodule TestProtocol do
+    alias Njord.Api.Request, as: Request
+    alias HTTPoison.Response, as: Response
+
+    def process_url(%Request{} = request, url, state) do
+      send state.pid, :custom_process_url
+      %Request{request | url: url}
+    end
+
+    def process_body(%Request{} = request, body, state) do
+      send state.pid, :custom_process_body
+      %Request{request | body: body}
+    end
+
+    def process_headers(%Request{} = request, headers, state) do
+      send state.pid, :custom_process_headers
+      %Request{request | headers: headers}
+    end
+
+    def process_status_code(%Response{} = response, status_code, state) do
+      send state.pid, :custom_process_status_code
+      %Response{response | status_code: status_code}
+    end
+
+    def process_response_headers(%Response{} = response, headers, state) do
+      send state.pid, :custom_process_response_headers
+      %Response{response | headers: headers}
+    end
+
+    def process_response_body(%Response{} = response, body, state) do
+      send state.pid, :custom_process_response_body
+      %Response{response | body: body}
+    end 
+  end
+
   defmodule TestApi do
     use Njord.Api
 
@@ -48,6 +83,17 @@ defmodule Njord.ApiTest do
     # Endpoint with default state generator.
     defendpoint :ep_with_state, :get,
       state_getter: fn -> %{pid: self(), type: :default_state} end
+
+    # Endpoint with custom function.
+    defendpoint :ep_with_custom_function, :get,
+      process_url: fn (r, _, s) ->
+        send s.pid, :custom_process_url
+        r
+      end
+
+    # Endpoint with custom protocol module.
+    defendpoint :ep_with_custom_protocol, :get,
+      protocol: TestProtocol
 
     # GET endpoint
     defget :get,
@@ -190,6 +236,32 @@ defmodule Njord.ApiTest do
     TestApi.ep_with_state
     assert_receive :default_state
     assert_receive ^request
+  end
+
+  test "endpoint with custom process function", %{state: state} do
+    request = %Njord.Api.Request{method: :get,
+                                 url: "/",
+                                 body: "",
+                                 headers: []}
+    TestApi.ep_with_custom_function(state: state)
+    assert_receive :custom_process_url
+    assert_receive :static_state
+    assert_receive ^request
+  end
+
+  test "endpoint with custom module function", %{state: state} do
+    request = %Njord.Api.Request{method: :get,
+                                 url: "/",
+                                 body: "",
+                                 headers: []}
+    TestApi.ep_with_custom_protocol(state: state)
+    assert_receive :custom_process_url
+    assert_receive :custom_process_headers
+    assert_receive :custom_process_body
+    assert_receive :custom_process_response_headers
+    assert_receive :custom_process_response_body
+    assert_receive :custom_process_status_code
+    assert_receive ^request 
   end
 
   test "GET endpoint" do
