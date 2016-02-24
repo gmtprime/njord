@@ -39,6 +39,11 @@ defmodule Njord.ApiTest do
   defmodule TestApi do
     use Njord.Api
 
+    def custom_process_url(%Njord.Api.Request{} = request, url, state) do
+      send state.pid, :custom_process_url
+      %Njord.Api.Request{request | url: url}
+    end
+
     def process_body(request, body, nil) do
       %Njord.Api.Request{request | body: body}
     end
@@ -90,6 +95,14 @@ defmodule Njord.ApiTest do
         send s.pid, :custom_process_url
         r
       end
+
+    # Endpoint with function from other module.
+    defendpoint :ep_with_foreign_function, :get,
+      process_url: {TestProtocol, :process_url}
+
+    # Endpoint with function from current module.
+    defendpoint :ep_with_local_function, :get,
+      process_url: :custom_process_url
 
     # Endpoint with custom protocol module.
     defendpoint :ep_with_custom_protocol, :get,
@@ -244,6 +257,28 @@ defmodule Njord.ApiTest do
                                  body: "",
                                  headers: []}
     TestApi.ep_with_custom_function(state: state)
+    assert_receive :custom_process_url
+    assert_receive :static_state
+    assert_receive ^request
+  end
+  
+  test "endpoint with foreign module function", %{state: state} do
+    request = %Njord.Api.Request{method: :get,
+                                 url: "/",
+                                 body: "",
+                                 headers: []}
+    TestApi.ep_with_foreign_function(state: state)
+    assert_receive :custom_process_url
+    assert_receive :static_state
+    assert_receive ^request
+  end
+
+  test "endpoint with local module function", %{state: state} do
+    request = %Njord.Api.Request{method: :get,
+                                 url: "/",
+                                 body: "",
+                                 headers: []}
+    TestApi.ep_with_local_function(state: state)
     assert_receive :custom_process_url
     assert_receive :static_state
     assert_receive ^request
