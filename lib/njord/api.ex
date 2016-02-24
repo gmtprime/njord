@@ -197,21 +197,33 @@ defmodule Njord.Api do
   ##
   # Gets the process functions.
   defp _get_process_functions(options) do 
-    protocol = Keyword.get options, :protocol, quote do: __MODULE__
+    module = Keyword.get options, :protocol, quote do: __MODULE__
     [:process_url, :process_headers, :process_body, :process_response_headers,
      :process_response_body, :process_status_code]
     |> Enum.map(
-         fn (name) ->
-           quoted_function = case Keyword.get options, name, nil do
-             nil ->
-               quote do: &(apply unquote(protocol), unquote(name), [&1, &2, &3])
-              f ->
-                quote do: &(unquote(f).(&1, &2, &3))
-            end
-            {name, quoted_function}
-         end)
+        fn (name) ->
+          fun = Keyword.get options, name, nil
+          quoted_function = _get_process_function(module, name, fun)
+          {name, quoted_function}
+        end)
     |> Map.new
   end
+
+  ##
+  # Gets a single quoted function.
+  defp _get_process_function(module, name, nil), do:
+    quote do: &(apply unquote(module), unquote(name), [&1, &2, &3])
+
+  defp _get_process_function(_, _, {module, fun}), do:
+    quote do: &(apply unquote(module), unquote(fun), [&1, &2, &3])
+
+  defp _get_process_function(_, _, fun) when is_atom(fun) do
+    module = quote do: __MODULE__
+    quote do: &(apply unquote(module), unquote(fun), [&1, &2, &3])
+  end
+
+  defp _get_process_function(_, _, fun), do:
+    quote do: &(unquote(fun).(&1, &2, &3))
 
   ##
   # Gets state
@@ -239,21 +251,27 @@ defmodule Njord.Api do
     * `method` - Method to be used when doing the request.
     * `options` - List of options:
       + `:path` - Path of the endpoint. Use `:<name of the var>` to replace
-        information it on the path i.e. "/accounts/:login" will expect a
+        information it on the path i.e. `"/accounts/:login"` will expect a
         variable named `login` in the function arguments.
       + `:args` - Name of the variables of the endpoint function.
       + `:protocol` - Module where the protocol is defined. By default is
       + `:state_getter` - Function to get or generate the state of every
         request.
-      + `process_url` - Function to be used when processing the URL.
-      + `process_headers` - Function to be used when processing the headers.
-      + `process_body` - Function to be used when processing the body.
-      + `process_response_headers` - Function to be used when processing the
-        response headers.
-      + `process_response_body` - Function to be used when processing the
-        response body.
-      + `process_status_code` - Function to be used when processing the status
-        code of the response.
+      + `process_*` - Function to execute instead of the default.
+        * `{module, function}` - Executes the function `&module.function/3`
+        * `:function` - Executes the function `__MODULE__.function/3`
+        * `function()` - Closure of a function with arity 3.
+        
+        The following are the valid `process_*` functions:
+        * `process_url` - Function to be used when processing the URL.
+        * `process_headers` - Function to be used when processing the headers.
+        * `process_body` - Function to be used when processing the body.
+        * `process_response_headers` - Function to be used when processing the
+          response headers.
+        * `process_response_body` - Function to be used when processing the
+          response body.
+        * `process_status_code` - Function to be used when processing the
+          status code of the response.
 
   Options when calling the genererated function:
     * `:params` - Parameters of the HTTP request as a `Keyword` list.

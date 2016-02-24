@@ -95,20 +95,26 @@ When generating the specification of the endpoint, there are several options:
   * `method` - Method to be used when doing the request.
   * `options` - List of options:
     + `:path` - Path of the endpoint. Use `:<name of the var>` to replace
-      information it on the path i.e. "/accounts/:login" will expect a
+      information it on the path i.e. `"/accounts/:login"` will expect a
       variable named `login` in the function arguments.
     + `:args` - Name of the variables of the endpoint function.
     + `:protocol` - Module where the protocol is defined.
     + `:state_getter` - Function to get or generate the state of every request.
-    + `process_url` - Function to be used when processing the URL.
-    + `process_headers` - Function to be used when processing the headers.
-    + `process_body` - Function to be used when processing the body.
-    + `process_response_headers` - Function to be used when processing the
-      response headers.
-    + `process_response_body` - Function to be used when processing the
-      response body.
-    + `process_status_code` - Function to be used when processing the status
-      code of the response.
+    + `process_*` - Function to execute instead of the default.
+      - `{module, function}` - Executes the function `&module.function/3`
+      - `:function` - Executes the function `__MODULE__.function/3`
+      - `function()` - Function with arity 3.
+
+      The following are the valid `process_*` functions:
+      - `process_url` - Function to be used when processing the URL.
+      - `process_headers` - Function to be used when processing the headers.
+      - `process_body` - Function to be used when processing the body.
+      - `process_response_headers` - Function to be used when processing the
+        response headers.
+      - `process_response_body` - Function to be used when processing the
+        response body.
+      - `process_status_code` - Function to be used when processing the
+        status code of the response.
 
 And when calling the genererated function there are other aditional options:
   * `:params` - Parameters of the HTTP request as a `Keyword` list.
