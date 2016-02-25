@@ -102,8 +102,8 @@ When generating the specification of the endpoint, there are several options:
     + `:state_getter` - Function to get or generate the state of every request.
     + `process_*` - Function to execute instead of the default.
       - `{module, function}` - Executes the function `&module.function/3`
-      - `:function` - Executes the function `__MODULE__.function/3`
-      - `function()` - Function with arity 3.
+      - `:function` - Executes the function `&__MODULE__.function/3`
+      - `f when is_fun(f)` - Function with arity 3.
 
       The following are the valid `process_*` functions:
       - `process_url` - Function to be used when processing the URL.
