@@ -95,7 +95,14 @@ When generating the specification of the endpoint, there are several options:
     + `:path` - Path of the endpoint. Use `:<name of the var>` to replace
       information in the path i.e. `"/accounts/:login"` will expect a
       variable named `login` in the function arguments.
-    + `:args` - Name of the variables of the endpoint function.
+    + `:args` - List of name of the variables of the endpoint function. The
+        names are defined as follows:
+        - `{name, opts}`: Name of the variable and list of options:
+          * `in_body: boolean`: To pass the variable to a body `Map` or not.
+          * `validation: function()`: Function of arity 1 to validate the
+          endpoint argument. It receives the argument and returns a boolean.
+        - `name when is_atom(name)`: Name of the argument. No options. By
+          default goes to the URL parameters or path arguments.
     + `:protocol` - Module where the protocol is defined.
     + `:state_getter` - Function to get or generate the state of every request.
     + `process_*` - Function to execute instead of the default.
