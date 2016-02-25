@@ -127,9 +127,7 @@ And when calling the genererated function there are other aditional options:
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
-
-  * When available in `hex` Add njord to your list of dependencies in `mix.exs`:
+  * When [available in Hex](https://hex.pm/docs/publish), add `Njord` to your list of dependencies in `mix.exs`:
 
   ```elixir
   def deps do
@@ -137,7 +135,7 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
   end
   ```
 
-  * If not available in `hex`:
+  * If not available in [Hex](https://hex.pm/docs/publish):
       
   ```elixir
   def deps do
@@ -145,11 +143,10 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
   end
   ```
 
-  * Ensure njord can be used starting `HTTPoison`:
+  * Ensure `Njord` can be used by starting `HTTPoison`:
 
   ```elixir
   def application do
     [applications: [:httpoison]]
   end
   ```
-
