@@ -28,8 +28,9 @@ end
 ```
 
 The above example shows how to create the functions `get_repos/1` and
-`get_repos/2` (this one receives a list of options for `HTTPoison`) for the
-endpoint `GET https://api.github.com/users/<username>`.
+`get_repos/2` (this one receives a list of options for `HTTPoison` or
+any of the options for the endpoint metioned later in this document)
+for the endpoint `GET https://api.github.com/users/:username`.
 
 For synchronous requests:
 ```elixir
@@ -92,7 +93,7 @@ When generating the specification of the endpoint, there are several options:
   * `method` - Method to be used when doing the request.
   * `options` - List of options:
     + `:path` - Path of the endpoint. Use `:<name of the var>` to replace
-      information it on the path i.e. `"/accounts/:login"` will expect a
+      information in the path i.e. `"/accounts/:login"` will expect a
       variable named `login` in the function arguments.
     + `:args` - Name of the variables of the endpoint function.
     + `:protocol` - Module where the protocol is defined.
@@ -126,9 +127,7 @@ And when calling the genererated function there are other aditional options:
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
-
-  * When available in `hex` Add njord to your list of dependencies in `mix.exs`:
+  * When [available in Hex](https://hex.pm/docs/publish), add `Njord` to your list of dependencies in `mix.exs`:
 
   ```elixir
   def deps do
@@ -136,7 +135,7 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
   end
   ```
 
-  * If not available in `hex`:
+  * If not available in [Hex](https://hex.pm/docs/publish):
       
   ```elixir
   def deps do
@@ -144,11 +143,10 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
   end
   ```
 
-  * Ensure njord can be used starting `HTTPoison`:
+  * Ensure `Njord` can be used by starting `HTTPoison`:
 
   ```elixir
   def application do
     [applications: [:httpoison]]
   end
   ```
-
