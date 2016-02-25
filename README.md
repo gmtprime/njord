@@ -58,39 +58,31 @@ which can be overriden:
 
 ```elixir
 # Processes the endpoint URL after the substitutions.
-@spec process_url(Njord.Api.Request.t, String.t, term)
-  :: Njord.Api.Request.t
+@spec process_url(Njord.Api.Request.t, String.t, term) :: Njord.Api.Request.t
 def process_url(request, url, state)
 
-# Processes the request body.
-@spec process_body(Njord.Api.Request.t, term, term)
-  :: Njord.Api.Request.t
-def process_body(request, body, state)
-
 # Processes the request headers.
-@spec process_headers(Njord.Api.Request.t, [{binary, binary}], term)
-  :: Njord.Api.Request.t
+@spec process_headers(Njord.Api.Request.t, [{binary, binary}], term) :: Njord.Api.Request.t
 def process_headers(request, headers, state)
 
-# Processes the status code of the request.
-@spec process_status_code(Njord.Api.Response.t, int, term)
-  :: HTTPoison.Response.t
-def process_status_code(response, status_code, state)
+# Processes the request body.
+@spec process_body(Njord.Api.Request.t, term, term) :: Njord.Api.Request.t
+def process_body(request, body, state)
       
 # Processes the response headers.
-@spec process_response_headers(Njord.Api.Response.t,
-                               [{binary, binary}],
-                               term)
-  :: HTTPoison.Response.t
+@spec process_response_headers(HTTPoison.Response.t, [{binary, binary}], term) :: HTTPoison.Response.t
 def process_response_headers(response, headers, state)
 
 # Processes the response body.
-@spec process_response_body(Njord.Api.Response.t, String.t, term)
-  :: HTTPoison.Response.t
+@spec process_response_body(HTTPoison.Response.t, String.t, term) :: HTTPoison.Response.t
 def process_response_body(response, body, state)
+
+# Processes the status code of the request.
+@spec process_status_code(HTTPoison.Response.t, int, term) :: HTTPoison.Response.t
+def process_status_code(response, status_code, state)
 ```
 
-These functions are executed in the order the were listed.
+These functions are executed in the order they were listed.
 
 ## Options
 
@@ -106,9 +98,9 @@ When generating the specification of the endpoint, there are several options:
     + `:protocol` - Module where the protocol is defined.
     + `:state_getter` - Function to get or generate the state of every request.
     + `process_*` - Function to execute instead of the default.
-      - `{module, function}` - Executes the function `&module.function/3`
-      - `:function` - Executes the function `&__MODULE__.function/3`
-      - `f when is_fun(f)` - Function with arity 3.
+      - `{module, function}` - It'll call the function `&module.function/3`
+      - `:function` - It'll call the function `&__MODULE__.function/3`
+      - `f when is_fun(f)` - It'll call the anonymous function `&(f.(&1, &2, &3))`.
 
       The following are the valid `process_*` functions:
       - `process_url` - Function to be used when processing the URL.
