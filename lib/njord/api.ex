@@ -89,6 +89,10 @@ defmodule Njord.Api do
 
   alias HTTPoison.Response, as: Response
 
+  defmodule ValidationError do
+    defexception message: "Validation Error.", data: {:error, :validation}
+  end
+
   defmacro __using__(_) do
     quote do
       import Njord.Api
@@ -146,11 +150,91 @@ defmodule Njord.Api do
   #   A tuple containing:
   #   { path,     # Split path
   #     not_used, # Keyword with the variables not replaced.
+  #     body,     # Body arguments embedded in the function arguments.
   #     args}     # List of arguments of the endpoint function.
   defp _get_split_path(path, args) do
-    margs = Enum.map args, &({&1, Macro.var(&1, Njord.Api)})
-    {path, not_used} = _split_path path, margs
-    {path, not_used, Keyword.values(margs)}
+    margs = Enum.reduce(args, %{args: [], fun_args: [], body: []},
+                        &_generate_argument/2)
+    {path, not_used} = _split_path path, margs.args
+    {path, not_used, margs.body, Enum.reverse(margs.fun_args)}
+  end
+
+  ##
+  # Generates an argument and adds it to the accumulator.
+  defp _generate_argument({name, opts}, acc) do
+    validated_var = _get_validated_var name, opts
+    case Keyword.get opts, :in_body, false do
+      true ->
+        %{acc | body: [{name, validated_var} | acc.body],
+                fun_args: [Macro.var(name, Njord.Api) | acc.fun_args]}
+      _ ->
+        %{acc | args: [{name, validated_var} | acc.args],
+                fun_args: [Macro.var(name, Njord.Api) | acc.fun_args]}
+    end
+  end
+
+  defp _generate_argument(name, acc) do
+    var = Macro.var(name, Njord.Api)
+    %{acc | args: [{name, var} | acc.args],
+            fun_args: [var | acc.fun_args]}
+  end
+
+  ##
+  # Gets the variable with its validation.
+  #
+  # Args:
+  #   * `name` - Name of the variable.
+  #   * `opts` - Options for the variable.
+  #
+  # Returns:
+  #   A quoted and maybe validated variable.
+  defp _get_validated_var(name, opts) do
+    function = case Keyword.get opts, :validation, nil do
+      nil -> nil
+      {module, fun} ->
+        quote do: &(apply unquote(module), unquote(fun), [&1])
+      fun when is_atom(fun) ->
+        quote do: &(apply unquote(quote do: __MODULE__), unquote(fun), [&1])
+      fun ->
+        quote do: &(unquote(fun).(&1))
+    end
+    _generate_validated_var(name, function)
+  end
+
+  ##
+  # Generates a variable with its validation function if it is provided.
+  #
+  # Args:
+  #   * `name` - Variable name.
+  #   * `function` - Function quoted definition.
+  #
+  # Returns:
+  #   A quoted and maybe validated variable.
+  defp _generate_validated_var(name, nil),  do:
+    Macro.var(name, Njord.Api)
+
+  defp _generate_validated_var(name, function) do
+    var = Macro.var(name, Njord.Api)
+    quote do
+      var = unquote(var)
+      function = unquote(function)
+      if true == function.(var) do
+        var
+      else
+        name = unquote(name)
+        validation = unquote(Macro.to_string(function))
+        raise ValidationError,
+          message: """
+            ValidationError:
+            Error validating argument "#{name}" with:
+              function: #{validation}
+              received value: #{inspect var}
+          """,
+          data: {:error, %{validation: unquote(name),
+                           function: validation,
+                           value: var}}
+      end
+    end 
   end
 
   ##
@@ -253,7 +337,14 @@ defmodule Njord.Api do
       + `:path` - Path of the endpoint. Use `:<name of the var>` to replace
         information it on the path i.e. `"/accounts/:login"` will expect a
         variable named `login` in the function arguments.
-      + `:args` - Name of the variables of the endpoint function.
+      + `:args` - List of name of the variables of the endpoint function. The
+        names are defined as follows:
+        - `{name, opts}`: Name of the variable and list of options.
+          * `in_body: boolean`: To pass the variable to a body `Map` or not.
+          * `validation: function()`: Function of arity 1 to validate the
+          function argument. It receives the argument and returns a boolean.
+        - `name when is_atom(name)`: Name of the argument. No options. By
+          default goes to the URL parameters or path arguments.
       + `:protocol` - Module where the protocol is defined. By default is
       + `:state_getter` - Function to get or generate the state of every
         request.
@@ -292,7 +383,7 @@ defmodule Njord.Api do
     path = _get_path options
     args = _get_function_arguments options
     functions = _get_process_functions options
-    {path, not_used, args} = _get_split_path path, args
+    {path, not_used, body, args} = _get_split_path path, args
     state = _get_state options
     quote do
       def unquote(name)(unquote_splicing(args), opts \\ []) do
@@ -302,7 +393,23 @@ defmodule Njord.Api do
         {path, opts} = build_path(path, not_used, opts)
 
         # Get body.
+        embedded_body = unquote(body) |> Map.new
         {body, opts} = build_body(not_used, opts)
+        body = if embedded_body != %{} do
+          cond do
+            is_map(body) ->
+              Map.merge(body, embedded_body)
+            is_list(body) ->
+              body = body |> Map.new
+              Map.merge(body, embedded_body)
+            body == "" ->
+              embedded_body
+            true ->
+              Map.put embedded_body, :body, body
+          end
+        else
+          body
+        end
 
         # Get headers.
         {headers, opts} = build_headers(opts)
@@ -459,8 +566,7 @@ defmodule Njord.Api do
   def build_body(not_used, options) do
     case Keyword.get not_used, :body, nil do
       nil ->
-        {body, options} = Keyword.pop options, :body, ""
-        {body, options}
+        Keyword.pop options, :body, ""
       body ->
         {_, options} = Keyword.pop options, :body, nil
         {body, options}

@@ -108,6 +108,12 @@ defmodule Njord.ApiTest do
     defendpoint :ep_with_custom_protocol, :get,
       protocol: TestProtocol
 
+    # Endpoint with body args.
+    defendpoint :ep_with_body_args, :post,
+      path: "njord-rocks.com/post/:arg",
+      args: [{:arg, validation: fn a -> "foo" == a end},
+             {:data, in_body: true, validation: fn a -> 1 == a end}]
+
     # GET endpoint
     defget :get,
       path: "njord-rocks.com/get"
@@ -187,7 +193,7 @@ defmodule Njord.ApiTest do
 
   test "endpoint with path arguments and parameters" do
     request = %Njord.Api.Request{method: :get,
-                                 url: "http://njord-rocks.com/get/1/foo?arg2=3&arg3=bar",
+                                 url: "http://njord-rocks.com/get/1/foo?arg3=bar&arg2=3",
                                  body: "",
                                  headers: []}
     TestApi.ep_with_path_args_and_params(1, "foo", 3, "bar")
@@ -297,6 +303,24 @@ defmodule Njord.ApiTest do
     assert_receive :custom_process_response_body
     assert_receive :custom_process_status_code
     assert_receive ^request 
+  end
+
+  test "endpoint with body args" do
+    request = %Njord.Api.Request{method: :post,
+                                 url: "http://njord-rocks.com/post/foo",
+                                 body: %{data: 1},
+                                 headers: []}
+    TestApi.ep_with_body_args("foo", 1)
+    assert_receive ^request 
+  end
+
+  test "endpoint with body args and validation" do
+    try do
+      TestApi.ep_with_body_args("foo", 2)
+    rescue
+      e in Njord.Api.ValidationError ->
+        {:error, %{validation: :data, value: 2}} = e.data
+    end
   end
 
   test "GET endpoint" do
