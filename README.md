@@ -31,10 +31,15 @@ The above example shows how to create the functions `get_repos/1` and
 `get_repos/2` (this one receives a list of options for `HTTPoison`) for the
 endpoint `GET https://api.github.com/users/<username>`.
 
+For synchronous requests:
 ```elixir
 iex(1)> alias HTTPoison.Response, as: Response
 iex(2)> Github.get_repos("alexdesousa")
 {:ok, %HTTPoison.Response{...}}
+```
+
+For asynchronous requests:
+```elixir
 iex(3)> Github.get_repos("alexdesousa", stream_to: self())
 {:ok, %HTTPoison.AsyncResponse{...}}
 iex(4)> flush
@@ -125,8 +130,7 @@ And when calling the genererated function there are other aditional options:
     the header and its content.
   * `:state` - A state for the `process_*` functions.
   * `:state_getter` - Function to get or generate the state of the request.
-  
-Also any other option available for `HTTPoison`.
+  * Any other option available for `HTTPoison`.
 
 ## Installation
 
