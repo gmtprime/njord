@@ -28,8 +28,9 @@ end
 ```
 
 The above example shows how to create the functions `get_repos/1` and
-`get_repos/2` (this one receives a list of options for `HTTPoison`) for the
-endpoint `GET https://api.github.com/users/<username>`.
+`get_repos/2` (this one receives a list of options for `HTTPoison` or
+any of the options for the endpoint metioned later in this document)
+for the endpoint `GET https://api.github.com/users/:username`.
 
 For synchronous requests:
 ```elixir
@@ -92,7 +93,7 @@ When generating the specification of the endpoint, there are several options:
   * `method` - Method to be used when doing the request.
   * `options` - List of options:
     + `:path` - Path of the endpoint. Use `:<name of the var>` to replace
-      information it on the path i.e. `"/accounts/:login"` will expect a
+      information in the path i.e. `"/accounts/:login"` will expect a
       variable named `login` in the function arguments.
     + `:args` - Name of the variables of the endpoint function.
     + `:protocol` - Module where the protocol is defined.
