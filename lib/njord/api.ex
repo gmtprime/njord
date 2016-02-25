@@ -49,23 +49,23 @@ defmodule Njord.Api do
       def process_body(request, body, state)
       
       # Processes the response headers.
-      @spec process_response_headers(Njord.Api.Response.t,
+      @spec process_response_headers(HTTPoison.Response.t,
                                      [{binary, binary}],
                                      term)
         :: HTTPoison.Response.t
       def process_response_headers(response, headers, state)
 
       # Processes the response body.
-      @spec process_response_body(Njord.Api.Response.t, String.t, term)
+      @spec process_response_body(HTTPoison.Response.t, String.t, term)
         :: HTTPoison.Response.t
       def process_response_body(response, body, state)
 
       # Processes the status code of the request.
-      @spec process_status_code(Njord.Api.Response.t, int, term)
+      @spec process_status_code(HTTPoison.Response.t, int, term)
         :: HTTPoison.Response.t
       def process_status_code(response, status_code, state)
 
-  These functions are executed in the order the were listed.
+  These functions are executed in the order they were listed.
   """
 
   defmodule Request do
