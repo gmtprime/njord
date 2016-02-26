@@ -24,6 +24,7 @@ defmodule Njord.Mixfile do
 
   defp deps do
     [{:httpoison, "~> 0.8.1"},
+     {:poison, "~> 2.1.0"},
      {:meck, "~> 0.8.2", only: :test}]
   end
 

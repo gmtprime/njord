@@ -9,7 +9,7 @@ defmodule Njord.ApiTest do
       send state.pid, :custom_process_url
       %Request{request | url: url}
     end
-
+      
     def process_body(%Request{} = request, body, state) do
       send state.pid, :custom_process_body
       %Request{request | body: body}
@@ -356,5 +356,13 @@ defmodule Njord.ApiTest do
   test "OPTIONS endpoint" do
     TestApi.options
     assert_receive %Njord.Api.Request{method: :options}
+  end
+
+  test "default process_body returns a JSON string" do
+    request = %Njord.Api.Request{method: :get,
+                                 url: "/",
+                                 body: "{}",
+                                 headers: []}
+    assert Njord.Base.process_body(request, %{}, nil) == request
   end
 end

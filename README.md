@@ -98,7 +98,10 @@ When generating the specification of the endpoint, there are several options:
     + `:args` - List of name of the variables of the endpoint function. The
         names are defined as follows:
         - `{name, opts}`: Name of the variable and list of options:
-          * `in_body: boolean`: To pass the variable to a body `Map` or not.
+          * `in_body: boolean`: To pass the variable to a body `Map` or not. By
+            default, the `Map` with the body will be converted to JSON and not
+            query string. If you want a query string, override the function
+            `process_body/3`.
           * `validation: function()`: Function of arity 1 to validate the
           endpoint argument. It receives the argument and returns a boolean.
         - `name when is_atom(name)`: Name of the argument. No options. By

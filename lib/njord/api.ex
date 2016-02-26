@@ -105,7 +105,13 @@ defmodule Njord.Api do
         end
       end
 
-      def process_body(%Request{} = request, body, _state) do
+      def process_body(%Request{} = request, body, _state)
+        when is_map(body) do
+        %Request{request | body: Poison.encode!(body)}
+      end
+
+      def process_body(%Request{} = request, body, _state)
+        when is_binary(body) do
         %Request{request | body: body}
       end
 
@@ -340,7 +346,10 @@ defmodule Njord.Api do
       + `:args` - List of name of the variables of the endpoint function. The
         names are defined as follows:
         - `{name, opts}`: Name of the variable and list of options.
-          * `in_body: boolean`: To pass the variable to a body `Map` or not.
+          * `in_body: boolean`: To pass the variable to a body `Map` or not. By
+            default, the `Map` with the body will be converted to JSON and not
+            query string. If you want a query string, override the function
+            `process_body/3`.
           * `validation: function()`: Function of arity 1 to validate the
           function argument. It receives the argument and returns a boolean.
         - `name when is_atom(name)`: Name of the argument. No options. By
