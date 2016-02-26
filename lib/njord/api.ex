@@ -105,13 +105,7 @@ defmodule Njord.Api do
         end
       end
 
-      def process_body(%Request{} = request, body, _state)
-        when is_map(body) do
-        %Request{request | body: Poison.encode!(body)}
-      end
-
-      def process_body(%Request{} = request, body, _state)
-        when is_binary(body) do
+      def process_body(%Request{} = request, body, _state) do
         %Request{request | body: body}
       end
 
@@ -333,6 +327,21 @@ defmodule Njord.Api do
     end
   end
 
+  ##
+  # Gets the request body type. It can be :json, :query or :binary. It is :json
+  # by default.
+  defp _get_request_body_type(options) do
+    case Keyword.get options, :request_body_type, :json do
+      :json -> :json
+      :query -> :query
+      :binary -> :binary
+      type ->
+        raise ValidationError,
+          message: "Invalid request body type: #{inspect type}",
+          data: nil
+    end
+  end
+
   @doc """
   Generates a function to call an endpoint.
 
@@ -346,17 +355,17 @@ defmodule Njord.Api do
       + `:args` - List of name of the variables of the endpoint function. The
         names are defined as follows:
         - `{name, opts}`: Name of the variable and list of options.
-          * `in_body: boolean`: To pass the variable to a body `Map` or not. By
-            default, the `Map` with the body will be converted to JSON and not
-            query string. If you want a query string, override the function
-            `process_body/3`.
+          * `in_body: boolean`: To pass the variable to a body `Map` or not.
           * `validation: function()`: Function of arity 1 to validate the
           function argument. It receives the argument and returns a boolean.
         - `name when is_atom(name)`: Name of the argument. No options. By
           default goes to the URL parameters or path arguments.
       + `:protocol` - Module where the protocol is defined. By default is
+        the current module.
       + `:state_getter` - Function to get or generate the state of every
         request.
+      + `:request_body_type` - Whether the body is a `:json`, `:query` string
+        or `:binary`.
       + `process_*` - Function to execute instead of the default.
         * `{module, function}` - Executes the function `&module.function/3`
         * `:function` - Executes the function `__MODULE__.function/3`
@@ -394,6 +403,7 @@ defmodule Njord.Api do
     functions = _get_process_functions options
     {path, not_used, body, args} = _get_split_path path, args
     state = _get_state options
+    request_body_type = _get_request_body_type options
     quote do
       def unquote(name)(unquote_splicing(args), opts \\ []) do
         # Get path.
@@ -437,11 +447,12 @@ defmodule Njord.Api do
         process_response_headers = unquote(functions.process_response_headers)
         process_response_body = unquote(functions.process_response_body)
         process_status_code = unquote(functions.process_status_code)
+        request_body_type = unquote(request_body_type)
         result = req
                  |> process_url.(path, state)
                  |> process_headers.(headers, state)
                  |> process_body.(body, state)
-                 |> request(opts)
+                 |> request(request_body_type, opts)
 
         case result do
           {:ok, %Response{} = response} ->
@@ -585,6 +596,16 @@ defmodule Njord.Api do
   @doc false
   def build_headers(options), do:
     Keyword.pop options, :headers, []
+
+  @doc false
+  def request(%Request{} = request, :json, opts), do:
+    request(%Request{request | body: Poison.encode!(request.body)}, opts)
+
+  def request(%Request{} = request, :query, opts), do:
+    request(%Request{request | body: URI.encode_query(request.body)}, opts)
+
+  def request(%Request{} = request, _, opts), do:
+    request(request, opts)
 
   @doc false
   def request(%Request{} = request, opts) do

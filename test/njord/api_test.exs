@@ -147,7 +147,7 @@ defmodule Njord.ApiTest do
     pid = self()
     :meck.new(Njord.Api, [:passthrough])
     :meck.expect(Njord.Api, :request,
-      fn(request, _opts) ->
+      fn(request, _type, _opts) ->
         send pid, request
         {:ok, %HTTPoison.Response{status_code: 200, headers: [], body: "body"}}
       end)
@@ -356,13 +356,5 @@ defmodule Njord.ApiTest do
   test "OPTIONS endpoint" do
     TestApi.options
     assert_receive %Njord.Api.Request{method: :options}
-  end
-
-  test "default process_body returns a JSON string" do
-    request = %Njord.Api.Request{method: :get,
-                                 url: "/",
-                                 body: "{}",
-                                 headers: []}
-    assert Njord.Base.process_body(request, %{}, nil) == request
   end
 end

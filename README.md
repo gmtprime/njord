@@ -106,6 +106,8 @@ When generating the specification of the endpoint, there are several options:
           endpoint argument. It receives the argument and returns a boolean.
         - `name when is_atom(name)`: Name of the argument. No options. By
           default goes to the URL parameters or path arguments.
+    + `:request_body_type` - Whether the body is a `:json`, `:query` string
+      or `:binary`.
     + `:protocol` - Module where the protocol is defined.
     + `:state_getter` - Function to get or generate the state of every request.
     + `process_*` - Function to execute instead of the default.
