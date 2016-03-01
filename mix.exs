@@ -1,7 +1,7 @@
 defmodule Njord.Mixfile do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
 
   @description """
     A wrapper over HTTPoison to build client APIs.
