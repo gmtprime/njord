@@ -126,6 +126,11 @@ When generating the specification of the endpoint, there are several options:
       - `process_status_code` - Function to be used when processing the
         status code of the response.
 
+      There's an exception for the function `process_http_response`. This
+      function has arity equal to 2. This function is used to process the HTTP
+      response after it has been processed by all the other `process_*`
+      functions. It receives the HTTP response (or error) and the state.
+
 And when calling the genererated function there are other aditional options:
   * `:params` - Parameters of the HTTP request as a `Keyword` list.
   * `:body` - Body of the request. If in the definition of the endpoint there

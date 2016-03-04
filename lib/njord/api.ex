@@ -65,6 +65,8 @@ defmodule Njord.Api do
         :: HTTPoison.Response.t
       def process_status_code(response, status_code, state)
 
+      # Processes the HTTP response (or error) after all the other `process_*`
+      # functions.
       @spec process_http_response(HTTPoison.Response.t |
                                   HTTPoison.AsyncResponse.t |
                                   HTTPoison.Error.t, term) :: term
@@ -401,6 +403,11 @@ defmodule Njord.Api do
           response body.
         * `process_status_code` - Function to be used when processing the
           status code of the response.
+
+      There's an exception for the function `process_http_response`. This
+      function has arity equal to 2. This function is used to process the HTTP
+      response after it has been processed by all the other `process_*`
+      functions. It receives the HTTP response (or error) and the state.
 
   Options when calling the genererated function:
     * `:params` - Parameters of the HTTP request as a `Keyword` list.
