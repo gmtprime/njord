@@ -2,6 +2,7 @@ defmodule Njord.ApiTest do
   use ExUnit.Case, async: true
 
   defmodule TestProtocol do
+    use Njord.Api
     alias Njord.Api.Request, as: Request
     alias HTTPoison.Response, as: Response
 
@@ -33,7 +34,12 @@ defmodule Njord.ApiTest do
     def process_response_body(%Response{} = response, body, state) do
       send state.pid, :custom_process_response_body
       %Response{response | body: body}
-    end 
+    end
+
+    def process_http_response(%Response{} = response, state) do
+      send state.pid, :custom_process_http_response
+      response.body
+    end
   end
 
   defmodule TestApi do
@@ -295,13 +301,14 @@ defmodule Njord.ApiTest do
                                  url: "/",
                                  body: "",
                                  headers: []}
-    TestApi.ep_with_custom_protocol(state: state)
+    assert "body" == TestApi.ep_with_custom_protocol(state: state)
     assert_receive :custom_process_url
     assert_receive :custom_process_headers
     assert_receive :custom_process_body
     assert_receive :custom_process_response_headers
     assert_receive :custom_process_response_body
     assert_receive :custom_process_status_code
+    assert_receive :custom_process_http_response
     assert_receive ^request 
   end
 

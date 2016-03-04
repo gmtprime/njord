@@ -65,6 +65,11 @@ defmodule Njord.Api do
         :: HTTPoison.Response.t
       def process_status_code(response, status_code, state)
 
+      @spec process_http_response(HTTPoison.Response.t |
+                                  HTTPoison.AsyncResponse.t |
+                                  HTTPoison.Error.t, term) :: term
+      def process_http_response(response, state)
+
   These functions are executed in the order they were listed.
   """
 
@@ -88,6 +93,8 @@ defmodule Njord.Api do
   end
 
   alias HTTPoison.Response, as: Response
+  alias HTTPoison.AsyncResponse, as: AsyncResponse
+  alias HTTPoison.Error, as: Error
 
   defmodule ValidationError do
     defexception message: "Validation Error.", data: {:error, :validation}
@@ -125,9 +132,16 @@ defmodule Njord.Api do
         %Response{response | body: body}
       end
 
+      def process_http_response(%Response{} = response, _state), do:
+        {:ok, response}
+      def process_http_response(%AsyncResponse{} = response, _state), do:
+        {:ok, response}
+      def process_http_response(%Error{} = error, _state), do:
+        {:error, error}
+
       defoverridable [ process_url: 3, process_body: 3, process_headers: 3,
                        process_response_headers: 3, process_response_body: 3,
-                       process_status_code: 3] 
+                       process_status_code: 3, process_http_response: 2] 
     end
   end
 
@@ -282,32 +296,38 @@ defmodule Njord.Api do
   # Gets the process functions.
   defp _get_process_functions(options) do 
     module = Keyword.get options, :protocol, quote do: __MODULE__
-    [:process_url, :process_headers, :process_body, :process_response_headers,
-     :process_response_body, :process_status_code]
+    [{:process_url, 3}, {:process_headers, 3}, {:process_body, 3},
+     {:process_response_headers, 3}, {:process_response_body, 3},
+     {:process_status_code, 3}, {:process_http_response, 2}]
     |> Enum.map(
-        fn (name) ->
+        fn ({name, arity}) ->
           fun = Keyword.get options, name, nil
-          quoted_function = _get_process_function(module, name, fun)
+          quoted_function = _get_process_function(module, name, arity, fun)
           {name, quoted_function}
         end)
     |> Map.new
   end
 
   ##
+  # TODO: Implement with currying
   # Gets a single quoted function.
-  defp _get_process_function(module, name, nil), do:
+  defp _get_process_function(module, name, 3, nil), do:
     quote do: &(apply unquote(module), unquote(name), [&1, &2, &3])
-
-  defp _get_process_function(_, _, {module, fun}), do:
+  defp _get_process_function(_, _, 3, {module, fun}), do:
     quote do: &(apply unquote(module), unquote(fun), [&1, &2, &3])
-
-  defp _get_process_function(_, _, fun) when is_atom(fun) do
-    module = quote do: __MODULE__
-    quote do: &(apply unquote(module), unquote(fun), [&1, &2, &3])
-  end
-
-  defp _get_process_function(_, _, fun), do:
+  defp _get_process_function(_, _, 3, fun) when is_atom(fun), do:
+    quote do: &(apply unquote(quote do: __MODULE__), unquote(fun), [&1, &2, &3])
+  defp _get_process_function(_, _, 3, fun), do:
     quote do: &(unquote(fun).(&1, &2, &3))
+  
+  defp _get_process_function(module, name, 2, nil), do:
+    quote do: &(apply unquote(module), unquote(name), [&1, &2])
+  defp _get_process_function(_, _, 2, {module, fun}), do:
+    quote do: &(apply unquote(module), unquote(fun), [&1, &2])
+  defp _get_process_function(_, _, 2, fun) when is_atom(fun), do:
+    quote do: &(apply unquote(quote do: __MODULE__), unquote(fun), [&1, &2])
+  defp _get_process_function(_, _, 2, fun), do:
+    quote do: &(unquote(fun).(&1, &2))
 
   ##
   # Gets state
@@ -447,6 +467,7 @@ defmodule Njord.Api do
         process_response_headers = unquote(functions.process_response_headers)
         process_response_body = unquote(functions.process_response_body)
         process_status_code = unquote(functions.process_status_code)
+        process_http_response = unquote(functions.process_http_response)
         request_body_type = unquote(request_body_type)
         result = req
                  |> process_url.(path, state)
@@ -454,16 +475,19 @@ defmodule Njord.Api do
                  |> process_body.(body, state)
                  |> request(request_body_type, opts)
 
-        case result do
+        processed = case result do
           {:ok, %Response{} = response} ->
             result = response
                      |> process_response_headers.(response.headers, state)
                      |> process_response_body.(response.body, state)
                      |> process_status_code.(response.status_code, state)
-            {:ok, %Response{body: result.body, headers: result.headers,
-                            status_code: result.status_code}}
-          other -> other
+
+            %Response{body: result.body, headers: result.headers,
+                      status_code: result.status_code}
+          {:ok, %AsyncResponse{} = response} -> response
+          {:error, error} -> error
         end
+        process_http_response.(processed, state)
       end
     end
   end
