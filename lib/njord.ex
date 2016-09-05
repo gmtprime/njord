@@ -57,7 +57,7 @@ defmodule Njord do
       # Processes the request body.
       @spec process_body(Njord.t, term, term) :: Njord.t
       def process_body(request, body, state)
-            
+
       # Processes the response headers.
       @spec process_response_headers(name, Response.t, [{binary, binary}], term)
         :: Response.t
@@ -111,15 +111,21 @@ defmodule Njord do
   Processes the request `body`. Receives the `request`, the `body` and the
   `state`. It should return the modified `request`.
   """
-  @callback process_body(request :: Njord.t, body :: Keyword.t, state :: term) ::
-    Njord.t
+  @callback process_body(
+    request :: Njord.t,
+    body :: Keyword.t,
+    state :: term
+  ) :: Njord.t
 
   @doc """
   Processes the request `headers`. Receives the `request`, the `headers` and
   `state`. It should return the modified `request`.
   """
-  @callback process_headers(request :: Njord.t, headers :: list, state :: term) ::
-    Njord.t
+  @callback process_headers(
+    request :: Njord.t,
+    headers :: list,
+    state :: term
+  ) :: Njord.t
 
   @doc """
   Processes the response `status_code`. Receives the `function` tuple
@@ -438,7 +444,7 @@ defmodule Njord do
   @doc false
   def get_validated_var(key, options) do
     var = Macro.var(key, Njord)
-    function = 
+    function =
       case Keyword.get(options, :validation, nil) do
         nil ->
           quote do: fn _ -> true end
