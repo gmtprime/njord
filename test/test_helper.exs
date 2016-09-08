@@ -7,9 +7,8 @@ defmodule NjordTestHTTP do
               body: body,
               headers: headers,
               options: options}
-    %Response{status_code: 200,
-              body: body,
-              headers: []}
+    response =  %Response{status_code: 200, body: body, headers: []}
+    {:ok, response}
   end
 end
 

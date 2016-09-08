@@ -76,7 +76,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.endpoint0()
+    assert {:ok, expected} == NjordTestApi.endpoint0()
   end
 
   test "Path arg endpoint" do
@@ -91,7 +91,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.endpoint1(1)
+    assert {:ok, expected} == NjordTestApi.endpoint1(1)
   end
 
   test "Arg endpoint" do
@@ -106,7 +106,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.endpoint2(2)
+    assert {:ok, expected} == NjordTestApi.endpoint2(2)
   end
 
   test "Body endpoint" do
@@ -121,7 +121,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.endpoint3(3)
+    assert {:ok, expected} == NjordTestApi.endpoint3(3)
   end
 
   test "Merge params endpoint" do
@@ -136,7 +136,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.endpoint4(4, [params: [b: 2]])
+    assert {:ok, expected} == NjordTestApi.endpoint4(4, [params: [b: 2]])
   end
 
   test "Merge body endpoint" do
@@ -151,14 +151,15 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.endpoint5(4, [body: [b: 2]])
+    assert {:ok, expected} == NjordTestApi.endpoint5(4, [body: [b: 2]])
   end
 
   test "Headers endpoint" do
+    headers = [{"Header", "Value"}]
     expected = %HTTPoison.Response{
       body: %{
         body: [],
-        headers: [{"Header", "Value"}],
+        headers: headers,
         method: :get,
         options: [],
         url: "http:///endpoint/6"
@@ -166,7 +167,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.endpoint6([headers: [{"Header", "Value"}]])
+    assert {:ok, expected} == NjordTestApi.endpoint6([headers: headers])
   end
 
   test "Njord default process_url/3" do
@@ -220,7 +221,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.get_endpoint()
+    assert {:ok, expected} == NjordTestApi.get_endpoint()
   end
 
   test "defpost endpoint" do
@@ -235,7 +236,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.post_endpoint()
+    assert {:ok, expected} == NjordTestApi.post_endpoint()
   end
 
   test "defput endpoint" do
@@ -250,7 +251,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.put_endpoint()
+    assert {:ok, expected} == NjordTestApi.put_endpoint()
   end
 
   test "defdelete endpoint" do
@@ -265,7 +266,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.delete_endpoint()
+    assert {:ok, expected} == NjordTestApi.delete_endpoint()
   end
 
   test "defhead endpoint" do
@@ -280,7 +281,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.head_endpoint()
+    assert {:ok, expected} == NjordTestApi.head_endpoint()
   end
 
   test "defpatch endpoint" do
@@ -295,7 +296,7 @@ defmodule NjordTest do
       headers: [],
       status_code: 200
     }
-    assert expected == NjordTestApi.patch_endpoint()
+    assert {:ok, expected} == NjordTestApi.patch_endpoint()
   end
 
   test "defoptions endpoint" do
@@ -311,6 +312,6 @@ defmodule NjordTest do
       status_code: 200
     }
 
-    assert expected == NjordTestApi.options_endpoint()
+    assert {:ok, expected} == NjordTestApi.options_endpoint()
   end
 end
