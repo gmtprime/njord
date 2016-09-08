@@ -1,7 +1,7 @@
 defmodule Njord.Mixfile do
   use Mix.Project
 
-  @version "1.0.1"
+  @version "1.0.2"
 
   def project do
     [app: :njord,
@@ -21,7 +21,7 @@ defmodule Njord.Mixfile do
 
   defp deps do
     [{:httpoison, "~> 0.9.0"},
-     {:earmark, ">= 0.0.0"},
+     {:earmark, ">= 0.0.0", only: :dev},
      {:ex_doc, "~> 0.13", only: :dev},
      {:credo, "~> 0.4.8", only: [:dev, :docs]},
      {:inch_ex, ">= 0.0.0", only: [:dev, :docs]}]

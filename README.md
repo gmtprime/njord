@@ -96,6 +96,6 @@ Just add it to your dependencies in your `mix.exs`:
 
 ```elixir
 def deps do
-  [{:njord, "~> 1.0.1"}]
+  [{:njord, "~> 1.0.2"}]
 end
 ```
